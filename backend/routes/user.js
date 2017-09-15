@@ -4,8 +4,9 @@ var express = require('express');
 var UserController = require('../controllers/user');
 
 var api = express.Router();
+var mdAuth = require('../middlewares/authenticated');
 
-api.get('/pruebas', UserController.pruebas);
+api.get('/pruebas', mdAuth.ensureAuth, UserController.pruebas);
 api.post('/register', UserController.register);
 api.post('/login', UserController.login);
 

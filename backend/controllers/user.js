@@ -10,7 +10,7 @@ var bcrypt = require('bcrypt-nodejs');
 var jwt = require('../services/jwt');
 
 function pruebas(req, res) {
-  res.status(200).send({ message: 'ruta de pruebas' })
+  res.status(200).send({ message: 'ruta de pruebas', user: req.user })
 }
 // register user
 function register(req, res) {
