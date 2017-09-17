@@ -5,6 +5,8 @@ var User = require('../models/user');
 
 // modules
 var bcrypt = require('bcrypt-nodejs');
+var fs = require('fs');
+var path = require('path');
 
 // services
 var jwt = require('../services/jwt');
@@ -96,8 +98,88 @@ function login(req, res) {
 
 }
 
+// update user
+function updateUser(req, res) {
+  var userId = req.params.id;
+  var userData = req.body;
+
+  if(userId != req.user.sub) {
+    res.status(400).send({ Error: 'El usuario no se corresponde con el id' })
+  }else {
+    User.findByIdAndUpdate(userId, userData, {new: true}, (err, userUpdated) => {
+      if(err) {
+        res.status(500).send({ Error: 'Error actualizando usuario' })
+      }else {
+        if(!userUpdated) {
+          res.status(400).send({ Error: 'No se ha podido actualizar el usuario' })
+        }else {
+          res.status(200).send({ message: 'usuario actualizado', user: userUpdated })
+        }
+      }
+    })
+  }
+}
+
+function uploadUserImg(req, res) {
+  var imgUsersPath = './assets/img/users/profile/';
+  var userId = req.params.id;
+
+  if(!req.files.img) {
+    return res.status(400).send({ Error: 'No existe archivo' })
+  }
+
+  var filePath = req.files.img.path;
+  var fileName = filePath.split('/');
+    fileName = fileName[fileName.length - 1];
+  var fileExt = fileName.split('.');
+    fileExt = fileExt[1];
+
+  if(userId != req.user.sub) {
+    fs.unlink(filePath);
+    return res.status(400).send({ Error: 'El usuario no se corresponde con el id' })
+  }
+
+  if(fileExt != 'png' && fileExt != 'jpg' && fileExt != 'gif') {
+    fs.unlink(filePath);
+    return res.status(400).send({ Error: 'Extensión de archivo no permitida' })
+  }
+
+  // move img to users img profile folder
+  var newFileName = userId + '.' + fileExt;
+  var newFilePath = imgUsersPath + newFileName;
+  fs.renameSync(filePath, newFilePath);
+
+  User.findByIdAndUpdate(userId, { img: newFileName }, {new: true}, (err, userUpdated) => {
+    if(err) {
+      res.status(500).send({ Error: 'Error actualizando usuario' })
+    }else {
+      if(!userUpdated) {
+        res.status(400).send({ Error: 'No se ha podido actualizar el usuario' })
+      }else {
+        res.status(200).send({ message: 'usuario actualizado', user: userUpdated })
+      }
+    }
+  })
+}
+
+function getUserImg(req, res) {
+  var imgName = req.params.img;
+  var imgPath = './assets/img/users/profile/' + imgName;
+
+  fs.exists(imgPath, function(exist) {
+    if(exist) {
+      res.sendFile(path.resolve(imgPath));
+    }else {
+      res.status(404).send({ message: 'File not found' });
+    }
+  })
+}
+
 module.exports = {
   pruebas,
   register,
-  login
+  login,
+  updateUser,
+  uploadUserImg,
+  getUserImg
 }
